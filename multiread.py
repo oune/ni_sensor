@@ -11,6 +11,7 @@ task.timing.cfg_samp_clk_timing(rate=51200,
                                 sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
                                 samps_per_chan=51200)
 
+print(task.ai_channels)
 
 data = task.read(number_of_samples_per_channel=-1)
 print("chanells : ", len(data))
