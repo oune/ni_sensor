@@ -3,7 +3,8 @@ import time
 from time import ctime
 
 task = nidaqmx.Task()
-task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai0")
+name = input("input device name ex) cDAQMOD1/ai0 : ")
+task.ai_channels.add_ai_voltage_chan(name)
 task.timing.cfg_samp_clk_timing(rate=51200,
                                 active_edge=nidaqmx.constants.Edge.RISING,
                                 sample_mode=nidaqmx.constants.AcquisitionType.FINITE,

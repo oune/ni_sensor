@@ -5,7 +5,7 @@ import numpy as np
 import csv
 
 task = nidaqmx.Task()
-task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai0")
+task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai0:3")
 task.timing.cfg_samp_clk_timing(rate=51200,
                                 active_edge=nidaqmx.constants.Edge.RISING,
                                 sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
