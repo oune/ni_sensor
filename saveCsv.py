@@ -11,7 +11,9 @@ task.timing.cfg_samp_clk_timing(rate=51200,
                                 sample_mode=nidaqmx.constants.AcquisitionType.FINITE,
                                 samps_per_chan=51200)
 
-with open('test.csv', 'a', newline='\n') as f:
+filePath = input("저장할 파일명을 입력해주세요")
+
+with open(filePath, 'a', newline='\n') as f:
     write = csv.writer(f)
 
     datas = task.read(number_of_samples_per_channel=-1)
