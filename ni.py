@@ -1,4 +1,3 @@
-from random import choices
 import string
 import nidaqmx
 from time import ctime, time, localtime, strftime
@@ -7,7 +6,10 @@ import csv
 import nidaqmx.system
 from nidaqmx.constants import *
 import inquirer
+from pyfiglet import Figlet
 
+f = Figlet(font='slant')
+print(f.renderText('NI csv writer'))
 
 system = nidaqmx.system.System.local()
 devices = system.devices
