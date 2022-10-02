@@ -1,13 +1,12 @@
 from random import choices
+import string
 import nidaqmx
-from time import ctime, time
+from time import ctime, time, localtime, strftime
 import numpy as np
 import csv
 import nidaqmx.system
 from nidaqmx.constants import *
 import inquirer
-import pprint
-import json
 
 
 system = nidaqmx.system.System.local()
@@ -15,12 +14,8 @@ devices = system.devices
 device_names = [device.name for device in devices]
 
 device_name = inquirer.list_input(
-    "장치를 선택해주세요.", choices=device_names)
+    "장치를 선택해주세요", choices=device_names)
 device = system.devices[device_name]
-
-channel_choices = [
-    {'name': channel.name} for channel in device.ai_physical_chans
-]
 
 
 def validation_function(_, current):
@@ -29,8 +24,12 @@ def validation_function(_, current):
     return True
 
 
+channel_choices = [
+    {'name': channel.name} for channel in device.ai_physical_chans
+]
+
 channels = [channel['name']
-            for channel in inquirer.checkbox("채널을 선택해주세요.",
+            for channel in inquirer.checkbox("채널을 선택해주세요",
                                              choices=channel_choices,
                                              validate=validation_function
                                              )]
@@ -56,35 +55,98 @@ except nidaqmx.errors.DaqError:
     task.close()
     exit()
 
-task.timing.cfg_samp_clk_timing(rate=51200,
-                                active_edge=nidaqmx.constants.Edge.RISING,
-                                sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,
-                                samps_per_chan=100000)
-
-
 # 라이브러리 업데이트 이후 사용
-# filePath = inquirer.path('저장할 파일명을 입력해주세요.',
+# filePath = inquirer.path('저장할 파일명을 입력해주세요',
 #                       exists=False, path_type=inquirer.Path.FILE)
 
 path_question = [
-    inquirer.Path('path', message='저장할 파일명을 입력해주세요.',
+    inquirer.Path('path', message='저장할 파일명을 입력해주세요',
                   exists=False, path_type=inquirer.Path.FILE),
 ]
 filePath = inquirer.prompt(path_question)['path']
 
-writerList = []
-fileList = []
-for channel in task.channels:
-    name = filePath + "_" + channel.name.replace("/", "_") + ".csv"
-    fileList.append(open(name, 'a', newline='\n'))
-    writerList.append(csv.writer(fileList[-1]))
-    print(name, '파일 생성됨')
 
-while True:
-    datas = task.read(number_of_samples_per_channel=51200)
+def int_validation(_, current):
+    try:
+        int(current)
+    except:
+        raise inquirer.errors.ValidationError('', reason='정수를 입력해 주세요.')
 
-    print(ctime(time()), '센서로 부터 값 획득')
+    return True
 
+
+questions = [
+    inquirer.Text(name='samplingRate',
+                  message="샘플링 레이트를 입력해 주세요",
+                  validate=int_validation),
+    inquirer.Text(name='sampleCount',
+                  message="한번에 획득할 데이터의 개수를 입력해 주세요",
+                  validate=int_validation),
+]
+
+
+answers = inquirer.prompt(questions)
+samplingRate = int(answers['samplingRate'])
+sampleCount = int(answers['sampleCount'])
+
+task.timing.cfg_samp_clk_timing(rate=samplingRate,
+                                active_edge=nidaqmx.constants.Edge.RISING,
+                                sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,
+                                samps_per_chan=sampleCount * 2)
+
+
+def getWriterFileList(date: string):
+    writerList = []
+    fileList = []
+    for channel in task.channels:
+        name = filePath + "_" + date + "_" + \
+            channel.name.replace("/", "_") + ".csv"
+        fileList.append(open(name, 'a', newline='\n'))
+        writerList.append(csv.writer(fileList[-1]))
+        print(name, '파일 생성됨')
+
+    return writerList, fileList
+
+
+def writeOne(csvwriter, data: list, time):
+    if type(csvwriter) is list:
+        csvwriter = csvwriter[0]
+
+    for raw in data:
+        csvwriter.writerow([time, raw])
+
+
+def writeMulti(writerList, datas: list, time):
     for idx, data in enumerate(datas):
-        for raw in data:
-            writerList[idx].writerow([ctime(time()), raw])
+        writeOne(writerList[idx], data, time)
+
+
+try:
+    pre_date = localtime(time())
+    pre_wday = pre_date.tm_wday
+    writerList, fileList = getWriterFileList(strftime('%Y%m%d', pre_date))
+    writer = writeMulti if len(channels) != 1 else writeOne
+
+    while True:
+        datas = task.read(number_of_samples_per_channel=sampleCount)
+
+        now = time()
+        now_date = localtime(now)
+        now_wday = now_date.tm_wday
+        now_str: string = ctime(now)
+
+        if (pre_wday != now_wday):
+            writerList, fileList = getWriterFileList(
+                strftime('%Y%m%d', pre_date))
+            pre_wday = now_wday
+
+        print(now_str, " 센서로 부터 값 획득")
+        writer(writerList, datas, now_str)
+
+except KeyboardInterrupt:
+    for file in fileList:
+        file.close()
+
+    task.close()
+    print('정상적으로 종료되었습니다.')
+    exit()
