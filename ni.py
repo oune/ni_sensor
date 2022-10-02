@@ -76,24 +76,13 @@ def int_validation(_, current):
     return True
 
 
-questions = [
-    inquirer.Text(name='samplingRate',
-                  message="샘플링 레이트를 입력해 주세요",
-                  validate=int_validation),
-    inquirer.Text(name='sampleCount',
-                  message="한번에 획득할 데이터의 개수를 입력해 주세요",
-                  validate=int_validation),
-]
-
-
-answers = inquirer.prompt(questions)
-samplingRate = int(answers['samplingRate'])
-sampleCount = int(answers['sampleCount'])
+samplingRate = int(inquirer.text("샘플링 레이트를 입력해 주세요",
+                                 validate=int_validation))
 
 task.timing.cfg_samp_clk_timing(rate=samplingRate,
                                 active_edge=nidaqmx.constants.Edge.RISING,
                                 sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,
-                                samps_per_chan=sampleCount * 2)
+                                samps_per_chan=samplingRate * 2)
 
 
 def getWriterFileList(date):
@@ -129,7 +118,7 @@ try:
     writer = writeMulti if len(channels) != 1 else writeOne
 
     while True:
-        datas = task.read(number_of_samples_per_channel=sampleCount)
+        datas = task.read(number_of_samples_per_channel=samplingRate)
 
         now = time()
         now_date = localtime(now)
