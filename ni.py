@@ -1,12 +1,11 @@
-import string
-import nidaqmx
-from time import ctime, time, localtime, strftime
-import numpy as np
 import csv
+import inquirer
+import nidaqmx
 import nidaqmx.system
 from nidaqmx.constants import *
-import inquirer
+from time import ctime, time, localtime, strftime
 from pyfiglet import Figlet
+from sys import exit
 
 f = Figlet(font='slant')
 print(f.renderText('NI csv writer'))
@@ -97,7 +96,7 @@ task.timing.cfg_samp_clk_timing(rate=samplingRate,
                                 samps_per_chan=sampleCount * 2)
 
 
-def getWriterFileList(date: string):
+def getWriterFileList(date):
     writerList = []
     fileList = []
     for channel in task.channels:
@@ -135,7 +134,7 @@ try:
         now = time()
         now_date = localtime(now)
         now_wday = now_date.tm_wday
-        now_str: string = ctime(now)
+        now_str = ctime(now)
 
         if (pre_wday != now_wday):
             writerList, fileList = getWriterFileList(
