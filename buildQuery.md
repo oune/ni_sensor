@@ -1,1 +1,0 @@
-pyinstaller ni.py -F --copy-metadata nidaqmx --collect-all pyfiglet

@@ -5,8 +5,10 @@ ni daqmx 에서 데이터를 획득하여 csv 형태로 저장하는 프로그�
 
 ## how to use
 dist 디렉토리에 존재하는 ni.exe 를 실행 하시면 됩니다.
+종료 하실때에는 cntl+c 를 누르면 안전하게 종료됩니다.
 
 ## build
 pyinstaller 를 사용하여 exe 파일을 제작 하였기 때문에
 ```pyinstaller ni.spec```
+```pyinstaller ni.py -F --copy-metadata nidaqmx --collect-all pyfiglet```
 명령어를 이용하시면 빌드가 가능합니다.
