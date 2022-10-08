@@ -9,6 +9,6 @@ dist 디렉토리에 존재하는 ni.exe 를 실행 하시면 됩니다.
 
 ## build
 pyinstaller 를 사용하여 exe 파일을 제작 하였기 때문에
-```pyinstaller ni.spec```
+```pyinstaller ni.spec``` 또는
 ```pyinstaller ni.py -F --copy-metadata nidaqmx --collect-all pyfiglet```
 명령어를 이용하시면 빌드가 가능합니다.

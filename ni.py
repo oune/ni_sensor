@@ -14,8 +14,7 @@ system = nidaqmx.system.System.local()
 devices = system.devices
 device_names = [device.name for device in devices]
 
-device_name = inquirer.list_input(
-    "장치를 선택해주세요", choices=device_names)
+device_name = inquirer.list_input("장치를 선택해주세요", choices=device_names)
 device = system.devices[device_name]
 
 
@@ -40,8 +39,6 @@ sensor_type = inquirer.list_input('측정 타입을 선택해 주세요', choice
 
 task = nidaqmx.Task()
 
-
-# 채널 등록시 예외 처리 필요
 try:
     if sensor_type == 'temperature':
         for channel in channels:
