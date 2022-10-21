@@ -21,5 +21,6 @@ with open(filePath, 'a', newline='\n') as f:
     now_str = ctime(now)
 
     for i in range(len(datas[0])):
-        write.writerow([now_str, datas[0][i], datas[1]
-                       [i], datas[2][i], datas[3][i]])
+        li = [now_str]
+        li.extend([datas[j][i] for j in range(len(task.channels))])
+        write.writerow(li)
