@@ -6,6 +6,8 @@ from nidaqmx.constants import *
 from time import time, localtime, strftime
 from pyfiglet import Figlet
 from sys import exit
+from scipy import signal
+
 f = Figlet(font='slant')
 print(f.renderText('NI csv writer'))
 
@@ -155,15 +157,11 @@ try:
         if type(datas[0]) is float:
             datas = [datas]
 
-        if numberOfSamples < 2500:  # 문제 발생 이 함수는 일차원 배열에 맞게 설계되어 2차원배열의 경우 맞지 않음.
-            new_datas = []
+        if numberOfSamples < 2500:
+            new_list = []
             for dataList in datas:
-                distance = int(len(dataList) / numberOfSamples)
-                newList = [dataList[i]
-                           for i in range(0, len(dataList) - 1, distance)]
-                new_datas.append(newList)
-
-            datas = new_datas
+                new_list.append(signal.resample(dataList, numberOfSamples))
+            datas = new_list
 
         now = time()
         now_date = localtime(now)
