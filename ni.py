@@ -3,10 +3,9 @@ import inquirer
 import nidaqmx
 import nidaqmx.system
 from nidaqmx.constants import *
-from time import ctime, time, localtime, strftime
+from time import time, localtime, strftime
 from pyfiglet import Figlet
 from sys import exit
-
 f = Figlet(font='slant')
 print(f.renderText('NI csv writer'))
 
@@ -21,6 +20,15 @@ device = system.devices[device_name]
 def validation_function(_, current):
     if len(current) == 0:
         raise inquirer.errors.ValidationError('', reason='채널을 한개 이상 선택해 주세요')
+    return True
+
+
+def int_validation(_, current):
+    try:
+        int(current)
+    except:
+        raise inquirer.errors.ValidationError('', reason='정수를 입력해 주세요.')
+
     return True
 
 
@@ -53,26 +61,6 @@ except nidaqmx.errors.DaqError:
     task.close()
     exit()
 
-# 라이브러리 업데이트 이후 사용
-# filePath = inquirer.path('저장할 파일명을 입력해주세요',
-#                       exists=False, path_type=inquirer.Path.FILE)
-
-path_question = [
-    inquirer.Path('path', message='저장할 파일명을 입력해주세요',
-                  exists=False, path_type=inquirer.Path.FILE),
-]
-filePath = inquirer.prompt(path_question)['path']
-
-
-def int_validation(_, current):
-    try:
-        int(current)
-    except:
-        raise inquirer.errors.ValidationError('', reason='정수를 입력해 주세요.')
-
-    return True
-
-
 samplingRate = int(inquirer.text("샘플링 레이트를 입력해 주세요",
                                  validate=int_validation))
 numberOfSamples = samplingRate
@@ -85,13 +73,44 @@ task.timing.cfg_samp_clk_timing(rate=samplingRate,
                                 sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS,
                                 samps_per_chan=samplingRate * 2)
 
+# 라이브러리 업데이트 이후 사용
+# filePath = inquirer.path('저장할 파일명을 입력해주세요',
+#                       exists=False, path_type=inquirer.Path.FILE)
+
+path_question = [
+    inquirer.Path('path', message='저장할 파일명을 입력해주세요',
+                  exists=False, path_type=inquirer.Path.FILE),
+]
+filePath = inquirer.prompt(path_question)['path']
+
+
+SAVE_TYPE = {'ONE_FILE': '여러 채널을 한 파일에 저장', 'MULTI_FILE': '채널별로 다른 파일에 저장'}
+
+if len(task.channels) > 1:
+    save_type = inquirer.list_input("파일 저장 방식을 선택해 주세요", choices=[
+        value for value in SAVE_TYPE.values()])
+else:
+    save_type = SAVE_TYPE['ONE_FILE']
+
+
+def getWriterFile(date):
+    writerList = []
+    fileList = []
+    name = filePath + "_" + date + "_" + \
+        task.channels.name.replace("/", "_").replace(":", "to") + ".csv"
+    fileList.append(open(name, 'a', newline='\n'))
+    writerList.append(csv.writer(fileList[-1]))
+    print(name, '파일 생성됨')
+
+    return writerList, fileList
+
 
 def getWriterFileList(date):
     writerList = []
     fileList = []
     for channel in task.channels:
         name = filePath + "_" + date + "_" + \
-            channel.name.replace("/", "_") + ".csv"
+            channel.name.replace("/", "_").replace(":", "to") + ".csv"
         fileList.append(open(name, 'a', newline='\n'))
         writerList.append(csv.writer(fileList[-1]))
         print(name, '파일 생성됨')
@@ -112,18 +131,39 @@ def writeMulti(writerList, datas: list, time):
         writeOne(writerList[idx], data, time)
 
 
+def writeMultiOne(csvwriter, datas: list, time):
+    if type(csvwriter) is list:
+        csvwriter = csvwriter[0]
+
+    for i in range(len(datas[0])):
+        li = [time]
+        li.extend([datas[j][i] for j in range(len(task.channels))])
+        csvwriter.writerow(li)
+
+
 try:
     pre_date = localtime(time())
     pre_wday = pre_date.tm_wday
-    writerList, fileList = getWriterFileList(strftime('%Y%m%d', pre_date))
-    writer = writeMulti if len(channels) != 1 else writeOne
+
+    writerFileGetter = getWriterFile if save_type == SAVE_TYPE['ONE_FILE'] else getWriterFileList
+    writerList, fileList = writerFileGetter(strftime('%Y%m%d', pre_date))
+    writer = writeMultiOne if save_type == SAVE_TYPE['ONE_FILE'] else writeMulti
 
     while True:
         datas = task.read(number_of_samples_per_channel=samplingRate)
 
-        if numberOfSamples < 2500:
-            distance = int(len(datas) / numberOfSamples)
-            datas = [datas[i] for i in range(0, len(datas) - 1, distance)]
+        if type(datas[0]) is float:
+            datas = [datas]
+
+        if numberOfSamples < 2500:  # 문제 발생 이 함수는 일차원 배열에 맞게 설계되어 2차원배열의 경우 맞지 않음.
+            new_datas = []
+            for dataList in datas:
+                distance = int(len(dataList) / numberOfSamples)
+                newList = [dataList[i]
+                           for i in range(0, len(dataList) - 1, distance)]
+                new_datas.append(newList)
+
+            datas = new_datas
 
         now = time()
         now_date = localtime(now)
@@ -131,11 +171,11 @@ try:
         now_str = strftime('%I:%M:%S', now_date)
 
         if (pre_wday != now_wday):
-            writerList, fileList = getWriterFileList(
+            writerList, fileList = writerFileGetter(
                 strftime('%Y%m%d', pre_date))
             pre_wday = now_wday
 
-        print(now_str, " 센서로 부터 값 획득", len(datas))
+        print(now_str, " 센서로 부터 값 획득", len(datas[0]))
         writer(writerList, datas, now_str)
 
 except KeyboardInterrupt:
