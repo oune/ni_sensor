@@ -75,6 +75,10 @@ def int_validation(_, current):
 
 samplingRate = int(inquirer.text("샘플링 레이트를 입력해 주세요",
                                  validate=int_validation))
+numberOfSamples = samplingRate
+
+if samplingRate < 2500:
+    samplingRate = 2500
 
 task.timing.cfg_samp_clk_timing(rate=samplingRate,
                                 active_edge=nidaqmx.constants.Edge.RISING,
@@ -117,17 +121,21 @@ try:
     while True:
         datas = task.read(number_of_samples_per_channel=samplingRate)
 
+        if numberOfSamples < 2500:
+            distance = int(len(datas) / numberOfSamples)
+            datas = [datas[i] for i in range(0, len(datas) - 1, distance)]
+
         now = time()
         now_date = localtime(now)
         now_wday = now_date.tm_wday
-        now_str = ctime(now)
+        now_str = strftime('%I:%M:%S', now_date)
 
         if (pre_wday != now_wday):
             writerList, fileList = getWriterFileList(
                 strftime('%Y%m%d', pre_date))
             pre_wday = now_wday
 
-        print(now_str, " 센서로 부터 값 획득")
+        print(now_str, " 센서로 부터 값 획득", len(datas))
         writer(writerList, datas, now_str)
 
 except KeyboardInterrupt:

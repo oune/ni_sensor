@@ -11,7 +11,7 @@ task = nidaqmx.Task()
 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai0")
 
 sampleRate = 2500    # Sample Rate in Hz
-numberOfSamples = 1
+numberOfSamples = 10
 
 # https://github.com/tenss/Python_DAQmx_examples
 
@@ -23,9 +23,13 @@ def printData(tTask, event_type, num_samples, callback_data):
     datas = task.read(sampleRate)
     now = time()
     now_str = ctime(now)
-    # print(now_str, " 센서로 부터 값 획득", len(datas))
-    print(now_str, " 센서로 부터 값 획득")
 
+    # numberOfSamples 가 2500 보다 작을때 사용하는 로직
+    if numberOfSamples < 2500:
+        distance = int(len(datas) / numberOfSamples)
+        datas = [datas[i] for i in range(0, len(datas) - 1, distance)]
+
+    print(now_str, " 센서로 부터 값 획득", len(datas))
     return 0
 
 
