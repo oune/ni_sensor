@@ -158,10 +158,8 @@ try:
             datas = [datas]
 
         if numberOfSamples < 2500:
-            new_list = []
-            for dataList in datas:
-                new_list.append(signal.resample(dataList, numberOfSamples))
-            datas = new_list
+            datas = [signal.resample(dataList, numberOfSamples)
+                     for dataList in datas]
 
         now = time()
         now_date = localtime(now)
