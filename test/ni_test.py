@@ -30,6 +30,16 @@ class TestStringMethods(unittest.TestCase):
             timer = Time()
             self.assertEqual(timer.getTime(), '09:00:00')
 
+    def test_nowDate(self):
+        with freeze_time("2012-01-15 00:00:00"):
+            timer = Time()
+            self.assertEqual(timer.getDate(), '20120115')
+
+    def test_nowDate1(self):
+        with freeze_time("2012-01-16 00:00:00"):
+            timer = Time()
+            self.assertEqual(timer.getDate(), '20120116')
+
 
 if __name__ == '__main__':
     unittest.main()
