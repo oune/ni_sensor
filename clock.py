@@ -15,5 +15,8 @@ class Time:
         self.pre = wday
         return ans
 
-    def getNow(self):
+    def getTime(self):
         return strftime('%H:%M:%S', localtime(time()))
+
+    def getDate(self):
+        return strftime('%Y%m%d', localtime(time()))
