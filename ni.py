@@ -3,7 +3,7 @@ import inquirer
 import nidaqmx
 import nidaqmx.system
 from nidaqmx.constants import *
-from time import time, localtime, strftime
+from clock import Time
 from pyfiglet import Figlet
 from sys import exit
 from scipy import signal
@@ -144,11 +144,10 @@ def writeMultiOne(csvwriter, datas: list, time):
 
 
 try:
-    pre_date = localtime(time())
-    pre_wday = pre_date.tm_wday
+    timer = Time()
 
     writerFileGetter = getWriterFile if save_type == SAVE_TYPE['ONE_FILE'] else getWriterFileList
-    writerList, fileList = writerFileGetter(strftime('%Y%m%d', pre_date))
+    writerList, fileList = writerFileGetter(timer.getDate())
     writer = writeMultiOne if save_type == SAVE_TYPE['ONE_FILE'] else writeMulti
 
     while True:
@@ -161,16 +160,10 @@ try:
             datas = [signal.resample(dataList, numberOfSamples)
                      for dataList in datas]
 
-        now = time()
-        now_date = localtime(now)
-        now_wday = now_date.tm_wday
-        now_str = strftime('%H:%M:%S', now_date)
+        if (timer.isDayChange):
+            writerList, fileList = writerFileGetter(timer.getDate())
 
-        if (pre_wday != now_wday):
-            writerList, fileList = writerFileGetter(
-                strftime('%Y%m%d', now_wday))
-            pre_wday = now_wday
-
+        now_str = timer.getTime()
         print(now_str, " 센서로 부터 값 획득", len(datas[0]))
         writer(writerList, datas, now_str)
 
