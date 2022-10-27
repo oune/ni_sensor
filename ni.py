@@ -160,7 +160,7 @@ try:
             datas = [signal.resample(dataList, numberOfSamples)
                      for dataList in datas]
 
-        if (timer.isDayChange):
+        if (timer.isDayChange()):
             writerList, fileList = writerFileGetter(timer.getDate())
 
         now_str = timer.getTime()
