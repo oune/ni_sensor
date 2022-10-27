@@ -164,11 +164,11 @@ try:
         now = time()
         now_date = localtime(now)
         now_wday = now_date.tm_wday
-        now_str = strftime('%I:%M:%S', now_date)
+        now_str = strftime('%H:%M:%S', now_date)
 
         if (pre_wday != now_wday):
             writerList, fileList = writerFileGetter(
-                strftime('%Y%m%d', pre_date))
+                strftime('%Y%m%d', now_wday))
             pre_wday = now_wday
 
         print(now_str, " 센서로 부터 값 획득", len(datas[0]))
